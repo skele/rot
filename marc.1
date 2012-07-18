@@ -1,0 +1,187 @@
+From marc.freitag@gmail.com Mon Jul 21 10:16:32 2008
+Date: Mon, 21 Jul 2008 15:02:33 +0100
+From: Marc Dewi Freitag <marc.freitag@gmail.com>
+To: Pau Amaro-Seoane <pau@aei.mpg.de>, Woodchuck <marmot@pennswoods.net>
+Subject: Re: [marmot@pennswoods.net: Rotation]
+
+Dear both,
+
+> ----- Forwarded message from Woodchuck <marmot@pennswoods.net> -----
+>
+> From: Woodchuck <marmot@pennswoods.net>
+> Subject: Rotation
+> To: Pau Amaro-Seoane <pau@aei.mpg.de>
+> Reply-To: Woodchuck <marmot@pennswoods.net>
+> Date: Fri, 18 Jul 2008 17:43:36 -0400 (EDT)
+> Message-ID: <Pine.BSO.4.64.0807181726571.22850@rachel.chuck>
+>
+> The emails on this have become incomprehensible.
+>
+
+I am sure I can add to the confusion. But let's try to help clarifying instead.
+
+> Here's what I have:
+>
+> Coordinate nomenclature:
+>
+> rho, theta, phi:    spherical coordinates.  rho is distance from
+> center of density.  Theta is the zenith angle.  Phi is the azimuth.
+>
+> r, phi, z:  cylindrical coordinates.  phi is the same as in spherical.
+> Phi is the azimuth angle.  r is the distance from the Z axis
+> (sqrt(x*x+y*y)).
+>
+> ( From Wikip: "In (American) mathematics, the notation for zenith
+> and azimuth are reversed as phi is used to denote the zenith angle
+> and theta is used to denote the azimuthal angle."  Please bear with
+> me as I acclimatize myself to French notation.)
+>
+
+I join a diagram realis(z)ed with asymptote (I love this thing). Do we
+agree on these symbols? I think they are (more or less standard). In
+particular "R" is distance from centre. I used to use lower-case "r"
+for distance from the z-axis but we can (and should) use rho. I think
+these are the symbols you agreed on in your last message. But NOT in
+this message.
+
+Still I will use R=sqrt(x**2+y**2+z**2) and rho=sqrt(x**2+y**2)
+(excuse my fortran) to answer your message, to be consistent with my
+diagram. Actually, I will not have to use (my) rho at all. So my "R"
+is your "rho".
+
+> I have ways of partitioning the data in spherical shells and
+> partitioning those shells into tori, the tori being solids of
+> revolution about the Z axis.  A torus is bounded by
+>
+>        rho, rho+drho
+>        theta, theta+dtheta
+>
+> Equivalently, the j-th torus in the i-th shell is bounded by:
+>
+>        rho(i), rho(i+1)
+>        theta(j), theta(j+1)
+>
+> rho(0) = 0., thus rho(i) is the inner surface of the i-th shell.
+>
+>
+> I have available the velocity of each particle in Cartesian, spherical
+> and cylindrical coordinates, retrievable by shell and torus index.
+>
+> What exactly should I do?
+>
+
+Aaaaaaahhhrrr! That's too direct a question!
+
+All right:
+
+For each torus,
+
+1) Compute the rotational velocity of the torus. From now on, all sums
+are over particles in torus i,j. M_i,j is the total mass in torus i,j,
+N_i,j, is number of particles in torus i,j. I use k as a index for a
+particle
+
+v_rot_i,j = 1/M_i,j*sum (m_k*v_phi_k)  # scalar
+
+where m_k is the mass of particle k. v_phi_k is the the component of
+the velocity of the particle along the (local) unit vector e_phi_k =
+(-sin(phi_k); cos(phi_k); 0). So v_phi_k =
+-sin(phi_k)*vx_k+cos(phi_k)*vy_k And you can use
+sin(phi_k)=y_k/sqrt(x_k**2+y_k**2) and
+cos(phi_k)=x_k/sqrt(x_k**2+y_k**2) [oops! I have just avoided using
+rho!].
+
+Note that we could prefer to have a "number-averaged" quantity, i.e.
+
+v_rot_i,j = 1/N_i,j*sum (v_phi_k)
+
+Maybe the code should have a command-line option to decide whether to
+use mass-averaged or number-averaged quantities.
+
+2) Compute the rotational (angular) frequency of the torus.
+
+omega_i,j = 1/M_i,j*sum (m_k*omega_k) # scalar
+
+with omega_k=v_phi_k/sqrt(x_k**2+y_k**2)
+
+3) Compute the velocity dispersions, based on v_rot, in the direction
+e_R, e_phi, e_theta
+
+sigma_R_i,j = sqrt(1/M_i,j*sum(m_k*v_R_k**2))
+sigma_theta_i,j = sqrt(1/M_i,j*sum(m_k*v_theta_k**2))
+sigma_phi_i,j = sqrt(1/M_i,j*sum(m_k*(v_phi_k-v_rot_i,j)**2))
+
+They are all scalars. Here v_R_k is the component of the velocity in
+the radial direction (along e_R_k),
+v_R_k=1/R_k*(vx_k*x_k+vy_k*y_k+vz_k*z_k) with
+R_k=sqrt(x_k**2+y_k**2+z_k**2). v_theta_k is the component along
+e_theta_k. We can use sin(theta_k)=sqrt(x_k**2+y_k**2)/R_k and
+cos(theta_k)=z_k/R_k. Then, v_theta_k = cos(phi_k)*cos(theta_k)*vx_k +
+sin(phi_k)*cos(theta_k)*vy_k - sin(theta_k)*vz_k.
+
+>From this, we can (also) get a 3D dispersion
+
+sigma_i,j=sqrt(sigma_R_i,j **2+sigma_theta_i,j **2+sigma_phi_i,j**2)
+
+4) Compute the phi velocity dispersion, based on omega. I use the same
+symbol as for 3) but there will be (slightly) different sigma's. Then
+there is the question of which sets is a more meaningful
+representation of the velocity field. I think it will depend from case
+to case. If it turns out that, the omega_i,j are more or less
+constant, from torus to torus, then the cluster is more or less in
+solid rotation and basing the computation of of the sigma's on omega's
+makes more sense tham on v_rot's. Anyway:
+
+sigma_phi_i,j =
+sqrt(1/M_i,j*sum(m_k*(v_phi_k-omega_i,j*sqrt(x_k**2+y_k**2))**2))
+
+Note that the difference is that we have omega_i,j*sqrt(x_k**2+y_k**2)
+instead of v_rot_i,j
+
+So finally, for each torus, we would get, 6 quantities to describe the
+velocity field:
+
+v_rot, omega, sigma_R, sigma_theta, sigma_phi_from_v_rot and
+sigma_phi_from_omega
+
+Of course, we should take advantage of this code to also compute
+densities in each torus:
+
+number_dens_i,j = N_i,j/volume_i,j and mass_dens_i,j = M_i,j/volume_i,j
+
+And if I am not mistaken (but I often am):
+
+volume_i,j=2*pi/3 *[cos(theta_{j+1})-cos(theta_j)] *[R_{i+1}**3-R_i**3]
+
+
+I hope this has become clearer...
+
+
+Cheers,
+
+Marc
+
+
+
+
+> Dave
+>
+> ----- End forwarded message -----
+>
+
+
+
+-- 
+| Marc Dewi Freitag (freitag[at]ast!cam!ac!uk)
+| Institute of Astronomy
+| Madingley Road, CB3 0HA Cambridge, UK
+| Phone: +44 (0)1223 766 098 Fax: +44 (0)1223 337 523
+
+    [ Part 2, Application/OCTET-STREAM (Name: "spher_coord.asy") ]
+    [ 2.3KB. ]
+    [ Unable to print this part. ]
+
+
+    [ Part 3, Application/POSTSCRIPT  1MB. ]
+    [ Unable to print this part. ]
+

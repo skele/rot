@@ -1,0 +1,90 @@
+usage: rot -i file [-o file] [-l file] [-j int] [-s int] [-t int] [-hm]
+	-i file	Take input from <file>. No default, mandatory option.
+	-o file	Write output on <file>. Default, standard output.
+	-l file	Write log info on <file>. Default, /dev/null.
+	-j jneigh	Use <jneigh> nearest neighbors. Default, 10.
+	-k nproc	Number of subprocesses to spawn. Default, 4.
+		Useful range: 1 to a small multiple of available processors.
+	-h	Print this help and exit.
+	-m	Use mass in calculating density. By default, do not use mass.
+	-s nshell	Number of spherical shells. Default, 20.
+	-t ntorus	Number of tori per spherical shell. Default, 9.
+
+
+the input file is in "splotch" format, consisting of comments
+(# in column 0) and data lines.
+
+The data lines consist of the following ascii fields, separated
+by whitespace:
+	time
+	mass
+	x
+	y
+	z
+	vx
+	vy
+	vz
+	other fields (ignored)
+
+Rot starts by reading the data, initializing certain data structures,
+and caculating various derived quantities, specifically the coordinates
+of each particle in spherical and cylindrical coordinates.  The
+data are then sorted in order of increasing "r", the distance from
+the origin.
+
+Then rot performs its first phase, which is to identify the jneigh
+nearest neighbors of each particle, which is done is several
+subprocesses, to take advantage of multiple cores or multiple SMP
+processors which might be available.  It is OK to specify more
+processes than there are processors available, the overhead is
+small.  This is all done in a clever routine, "neighbors" and a
+generic control function "spawnit".
+
+Once the nearest neighbors have been identified, rot calculates the
+center of density according to Eqn II.3 of the reference (Casertano
+1985).  Density radius (Eqn II.4) and density-weighted average
+density (Eqn II.5) are also calculated, and printed out.
+
+The data is then translated to the center of density, coordinate
+transformations are recalculated, and the data is resorted.
+
+This ends the first phase.
+
+In the second phase, the particles are partitioned into spherical
+shells, nshell of them, dimensioned so that each shell has approximately
+NDATA/NSHELL particles.
+
+Each shell is further partioned into tori, the tori are dimensioned
+such that each torus within a shell has the same volume.  Ntorus
+tori per shell are generated.
+
+Various physical quantities (Freitag 2008) are calculated within
+each torus, and these are printed out for each torus.
+
+References
+
+Casertano, Stefano and Hut, Piet, "Core Radius and Density Measurements
+in N-Body Experiments: Connections with Theoretical and Observational
+Definitions", The Astrophysical Journal, 298:80-94, 1984 November 1
+
+Freitag, Marc, personal communication, 2008.
+
+
+Notes on the program:
+
+The methods of partitioning into shells and tori is flexible.  Other
+criteria are possible.  
+
+INSTALLATION AND OPERATION
+
+Run "make".
+
+A sample shell script, "run" is provided, to be modified as the
+user sees fit.
+
+LICENSE AND COPYRIGHT
+
+(C) 2008, David J. Vanecek, marmot@pennswoods.net, all rights
+reserved.
+
+See individual copyright/license notices in source files.
